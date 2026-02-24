@@ -1,5 +1,73 @@
 # Freedom Is Coming
 
+A single-page website with cyberpunk/hacker aesthetics, showcasing the theme of "Freedom Is Coming".
+
+## ✨ Features
+
+- **3D Black Hole Visual** - Accretion disk particle system using Three.js, simulating a black hole's event horizon
+- **Text Decryption Animation** - Hacker-style text encryption/decryption dynamic effects
+- **CRT Screen Effects** - Retro scanlines and vignette effects
+- **HUD Interface Elements** - Sci-fi styled status display interface
+- **Mouse Parallax Effect** - Smooth parallax camera movement following mouse
+- **Interactive Burst Effect** - Click button to trigger particle acceleration and dispersion
+
+## 🛠️ Tech Stack
+
+- HTML5 / CSS3
+- JavaScript (ES6+)
+- [Three.js](https://threejs.org/) (r128) - 3D rendering engine
+- Canvas API - Particle texture generation
+
+## 🚀 Getting Started
+
+1. Clone or download this project
+2. Open `index.html` directly in your browser
+3. Move your mouse to experience parallax effects
+4. Click "INITIATE OVERRIDE" button to trigger interactive effects
+
+No build tools or dependency installation required, works out of the box.
+
+## 📁 Project Structure
+
+```
+StepFun/
+├── index.html    # Main page (includes all styles and scripts)
+└── README.md     # Project documentation
+```
+
+## 🎨 Visual Design
+
+- **Color Scheme**: Deep black background (#030303) + Pure white primary + Red warning (#ff2a2a)
+- **Typography**: 
+  - Headings: Syncopate (futuristic tech feel)
+  - Body: Space Mono (monospace programming style)
+- **Particle System**: Accretion disk of 45,000 particles, gradient from white core to red to gray edges
+
+## 🌟 Highlights
+
+### Black Hole Accretion Disk
+Particles orbit around a central black hole, following Kepler's laws - faster rotation closer to the center.
+
+### Text Decryption Effect
+Custom TextScramble class implements character-by-character decryption animation in hacker style.
+
+### Interactive Burst
+After clicking the button, particles accelerate and expand outward, simulating an energy burst visual effect.
+
+## 📝 Development Notes
+
+The project uses a single-file architecture with all CSS and JavaScript inline in `index.html` for easy deployment and sharing.
+
+3D rendering uses Three.js Points particle system with Canvas-generated glow textures, eliminating external resource dependencies.
+
+## 📄 License
+
+MIT License
+
+---
+
+# 自由即将降临
+
 一个具有赛博朋克/黑客美学风格的单页面网站，展示"自由即将降临"的主题概念。
 
 ## ✨ 特性
