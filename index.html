@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freedom Is Coming - Advanced Replica</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syncopate:wght@400;700&display=swap');
+
+        :root {
+            --primary: #ffffff;
+            --accent: #ff2a2a;
+            --bg: #030303;
+            --hud-color: rgba(255, 255, 255, 0.4);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg);
+            overflow: hidden;
+            font-family: 'Space Mono', monospace;
+            color: var(--primary);
+            user-select: none;
+        }
+
+        /* 3D 画布 */
+        #webgl-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* 屏幕后处理特效 */
+        .crt-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 3px 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: 0 0 200px rgba(0,0,0,0.9) inset;
+            z-index: 11;
+            pointer-events: none;
+        }
+
+        /* HUD 界面元素 */
+        .hud-top-left, .hud-bottom-right, .hud-crosshair {
+            position: absolute;
+            z-index: 20;
+            pointer-events: none;
+            color: var(--hud-color);
+            font-size: 10px;
+            letter-spacing: 2px;
+        }
+        .hud-top-left {
+            top: 30px;
+            left: 30px;
+            border-left: 2px solid var(--accent);
+            padding-left: 10px;
+        }
+        .hud-bottom-right {
+            bottom: 30px;
+            right: 30px;
+            text-align: right;
+            border-right: 2px solid var(--primary);
+            padding-right: 10px;
+        }
+        .hud-crosshair {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+        .hud-crosshair::before, .hud-crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255,255,255,0.3);
+        }
+        .hud-crosshair::before { top: 50%; left: -10px; right: -10px; height: 1px; transform: translateY(-50%); }
+        .hud-crosshair::after { left: 50%; top: -10px; bottom: -10px; width: 1px; transform: translateX(-50%); }
+
+        /* 主体 UI 内容区 */
+        main {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            padding-left: 8vw;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+
+        .content-panel {
+            max-width: 600px;
+            pointer-events: auto;
+            position: relative;
+        }
+
+        .bg-text {
+            position: absolute;
+            top: -100px;
+            left: -50px;
+            font-family: 'Syncopate', sans-serif;
+            font-size: 12rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.02);
+            z-index: -1;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background: rgba(255, 42, 42, 0.1);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 5px 12px;
+            font-size: 0.75rem;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            animation: pulse-border 2s infinite;
+        }
+
+        h1 {
+            font-family: 'Syncopate', sans-serif;
+            font-size: clamp(2rem, 4vw, 4.5rem);
+            font-weight: 700;
+            line-height: 1.1;
+            margin: 0 0 1rem 0;
+            text-transform: uppercase;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        h1 .cn-title {
+            display: block;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.25em;
+            letter-spacing: 0.5em;
+            color: var(--accent);
+            margin-top: 10px;
+            font-weight: 400;
+        }
+
+        p {
+            font-size: clamp(0.9rem, 1vw, 1.1rem);
+            line-height: 1.8;
+            color: #a0a0a0;
+            margin-bottom: 3rem;
+            max-width: 80%;
+        }
+
+        /* 交互按钮 */
+        .btn-glitch {
+            position: relative;
+            background: transparent;
+            color: var(--primary);
+            font-family: 'Space Mono', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            padding: 16px 40px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            text-transform: uppercase;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-glitch::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--primary);
+            transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1);
+            transform: translateX(0);
+            z-index: -1;
+        }
+
+        .btn-glitch:hover {
+            color: var(--bg);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-glitch:hover::before {
+            transform: translateX(100%);
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(255, 42, 42, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 42, 42, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 42, 42, 0); }
+        }
+
+        /* 加载动画 */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 1s ease-out;
+        }
+        
+        .loader-text {
+            font-size: 0.8rem;
+            letter-spacing: 4px;
+            color: var(--primary);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 加载屏幕 -->
+    <div id="loader">
+        <div class="loader-text" id="loader-status">DECRYPTING PROTOCOLS...</div>
+    </div>
+
+    <!-- 背景特效 -->
+    <div class="crt-overlay"></div>
+    <div class="vignette"></div>
+
+    <!-- HUD 界面 -->
+    <div class="hud-top-left">
+        SYS.SEC: COMPROMISED<br>
+        LOC: CLASSIFIED<br>
+        <span style="color: var(--accent);">FREQ: 144.08Hz</span>
+    </div>
+    <div class="hud-bottom-right">
+        UPLINK STATUS: READY<br>
+        DATA STREAM: ENCRYPTED
+    </div>
+    <div class="hud-crosshair"></div>
+
+    <!-- 3D 渲染区 -->
+    <div id="webgl-container"></div>
+
+    <!-- UI 主内容 -->
+    <main>
+        <div class="content-panel">
+            <div class="bg-text">TRUTH</div>
+            <div class="status-badge">Warning: Signal Intercepted</div>
+            
+            <h1 class="scramble-text" data-text="Freedom Is Coming">
+                Freedom Is Coming
+                <span class="cn-title">自由即将降临</span>
+            </h1>
+            
+            <p class="scramble-text" data-text="Information is power. The event horizon of censorship is breaking. Reclaim your human right to free expression.">
+                Information is power. The event horizon of censorship is breaking. Reclaim your human right to free expression.<br><br>
+                <span style="opacity:0.5; font-size: 0.8em; letter-spacing: 2px;">信息即权力。夺回你自由表达的人权。</span>
+            </p>
+            
+            <button class="btn-glitch" id="override-btn">INITIATE OVERRIDE</button>
+        </div>
+    </main>
+
+    <!-- 引入 Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // ==========================================
+        // 文本解密（Scramble）动画逻辑
+        // ==========================================
+        class TextScramble {
+            constructor(el) {
+                this.el = el;
+                this.chars = '!<>-_\\/[]{}—=+*^?#________';
+                this.update = this.update.bind(this);
+            }
+            setText(newText) {
+                const oldText = this.el.innerText;
+                const length = Math.max(oldText.length, newText.length);
+                const promise = new Promise((resolve) => this.resolve = resolve);
+                this.queue = [];
+                for (let i = 0; i < length; i++) {
+                    const from = oldText[i] || '';
+                    const to = newText[i] || '';
+                    const start = Math.floor(Math.random() * 40);
+                    const end = start + Math.floor(Math.random() * 40);
+                    this.queue.push({ from, to, start, end });
+                }
+                cancelAnimationFrame(this.frameRequest);
+                this.frame = 0;
+                this.update();
+                return promise;
+            }
+            update() {
+                let output = '';
+                let complete = 0;
+                for (let i = 0, n = this.queue.length; i < n; i++) {
+                    let { from, to, start, end, char } = this.queue[i];
+                    if (this.frame >= end) {
+                        complete++;
+                        output += to;
+                    } else if (this.frame >= start) {
+                        if (!char || Math.random() < 0.28) {
+                            char = this.randomChar();
+                            this.queue[i].char = char;
+                        }
+                        output += `<span style="color: var(--accent); opacity: 0.8;">${char}</span>`;
+                    } else {
+                        output += from;
+                    }
+                }
+                this.el.innerHTML = output;
+                if (complete === this.queue.length) {
+                    this.resolve();
+                } else {
+                    this.frameRequest = requestAnimationFrame(this.update);
+                    this.frame++;
+                }
+            }
+            randomChar() {
+                return this.chars[Math.floor(Math.random() * this.chars.length)];
+            }
+        }
+
+        // ==========================================
+        // Three.js 核心逻辑 - "事件视界"
+        // ==========================================
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x030303, 0.02);
+
+        // 相机设置 (放置在稍偏右的位置，为左侧UI留白)
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 30);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x030303, 1);
+        container.appendChild(renderer.domElement);
+
+        // 动态生成发光粒子贴图，避免外部加载
+        function createGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
+            gradient.addColorStop(0.4, 'rgba(150, 150, 150, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+        const particleTexture = createGlowTexture();
+
+        // 1. 核心黑洞 (The Void)
+        const voidGeo = new THREE.SphereGeometry(4.5, 64, 64);
+        const voidMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const voidSphere = new THREE.Mesh(voidGeo, voidMat);
+        // 稍微偏移核心位置到右侧
+        voidSphere.position.x = 8;
+        scene.add(voidSphere);
+
+        // 2. 吸积盘数据粒子群 (Accretion Disk)
+        const particleCount = 45000;
+        const geometry = new THREE.BufferGeometry();
+        
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+        
+        // 存储粒子的初始参数，用于动画计算
+        const particleData = [];
+
+        const colorInside = new THREE.Color(0xffffff); // 核心处纯白炽热
+        const colorMiddle = new THREE.Color(0xff2a2a); // 中间红色警告
+        const colorOutside = new THREE.Color(0x333333); // 边缘暗淡数据
+
+        for (let i = 0; i < particleCount; i++) {
+            // 在圆环区域内生成随机半径，越靠近中心越密集
+            const radius = 5 + Math.pow(Math.random(), 2) * 20; 
+            const angle = Math.random() * Math.PI * 2;
+            
+            // 高度：越靠近中心越薄，边缘稍微厚一点并带有随机散布
+            const heightVariance = Math.max(0, (radius - 5) * 0.15);
+            const y = (Math.random() - 0.5) * heightVariance * (Math.random() > 0.5 ? 1 : -1);
+
+            positions[i * 3] = Math.cos(angle) * radius;
+            positions[i * 3 + 1] = y;
+            positions[i * 3 + 2] = Math.sin(angle) * radius;
+
+            // 颜色基于距离中心的半径插值
+            const mixedColor = new THREE.Color();
+            if (radius < 10) {
+                const ratio = (radius - 5) / 5;
+                mixedColor.lerpColors(colorInside, colorMiddle, ratio);
+            } else {
+                const ratio = Math.min(1, (radius - 10) / 15);
+                mixedColor.lerpColors(colorMiddle, colorOutside, ratio);
+            }
+
+            colors[i * 3] = mixedColor.r;
+            colors[i * 3 + 1] = mixedColor.g;
+            colors[i * 3 + 2] = mixedColor.b;
+
+            // 粒子大小变化
+            sizes[i] = Math.random() * 2.5 + 0.5;
+
+            // 保存动画所需的速度和角度
+            particleData.push({
+                radius: radius,
+                angle: angle,
+                speed: (0.02 + Math.random() * 0.03) * (30 / Math.pow(radius, 1.5)), // 离中心越近转得越快 (开普勒定律风格)
+                yOffset: y
+            });
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        // 自定义着色器材质以支持更好的粒子渲染
+        const material = new THREE.PointsMaterial({
+            size: 0.8,
+            vertexColors: true,
+            map: particleTexture,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            transparent: true,
+            opacity: 0.9
+        });
+
+        const particleSystem = new THREE.Points(geometry, material);
+        // 与黑洞对齐
+        particleSystem.position.x = 8;
+        // 倾斜吸积盘呈现电影感视角
+        particleSystem.rotation.x = Math.PI * 0.15;
+        scene.add(particleSystem);
+
+        // ==========================================
+        // 交互与动画循环
+        // ==========================================
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetX = 0;
+        let targetY = 0;
+        const windowHalfX = window.innerWidth / 2;
+        const windowHalfY = window.innerHeight / 2;
+
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - windowHalfX) * 0.001;
+            mouseY = (event.clientY - windowHalfY) * 0.001;
+        });
+
+        const clock = new THREE.Clock();
+        let isOverriding = false;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // 缓动鼠标移动目标
+            targetX = mouseX * 2;
+            targetY = mouseY * 2;
+
+            // 1. 摄像机视差 (Parallax)
+            camera.position.x += (targetX * 5 - camera.position.x) * 0.05;
+            camera.position.y += (-targetY * 5 + 5 - camera.position.y) * 0.05;
+            camera.lookAt(8, 0, 0); // 始终看向黑洞中心
+
+            // 2. 整体系统微小浮动
+            particleSystem.rotation.y = targetX * 0.2 + time * 0.05;
+            particleSystem.rotation.x = Math.PI * 0.15 + targetY * 0.2;
+
+            // 3. 粒子漩涡运动计算
+            const positions = particleSystem.geometry.attributes.position.array;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const data = particleData[i];
+                
+                // 如果处于 override 状态，粒子加速并向外扩散
+                if (isOverriding) {
+                    data.speed += 0.0005;
+                    data.radius += data.speed * 2;
+                }
+
+                data.angle -= data.speed; // 顺时针旋转
+                
+                // 轨道波动 (Z轴上的轻微起伏)
+                const wave = Math.sin(data.angle * 3 + time * 2) * 0.5;
+
+                positions[i * 3] = Math.cos(data.angle) * data.radius;
+                positions[i * 3 + 1] = data.yOffset + wave;
+                positions[i * 3 + 2] = Math.sin(data.angle) * data.radius;
+            }
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+
+            // 4. 黑洞脉冲 (微小的缩放)
+            const scale = 1 + Math.sin(time * 3) * 0.02;
+            voidSphere.scale.set(scale, scale, scale);
+
+            renderer.render(scene, camera);
+        }
+
+        // ==========================================
+        // 页面初始化与事件绑定
+        // ==========================================
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = () => {
+            animate();
+            
+            // 模拟系统加载流程
+            setTimeout(() => {
+                document.getElementById('loader-status').innerText = 'ACCESS GRANTED';
+                document.getElementById('loader-status').style.color = '#00ff00';
+                
+                setTimeout(() => {
+                    const loader = document.getElementById('loader');
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.style.display = 'none', 1000);
+
+                    // 启动文本黑客解密特效
+                    const phrases = document.querySelectorAll('.scramble-text');
+                    phrases.forEach((el, index) => {
+                        const fx = new TextScramble(el);
+                        const text = el.getAttribute('data-text');
+                        // 错开动画时间
+                        setTimeout(() => {
+                            fx.setText(text);
+                        }, 500 + index * 800);
+                    });
+
+                }, 800);
+            }, 1500);
+        };
+
+        // 按钮交互：爆发效果
+        const btn = document.getElementById('override-btn');
+        btn.addEventListener('click', () => {
+            if (isOverriding) return;
+            
+            btn.innerText = 'OVERRIDE EXECUTING...';
+            btn.style.color = '#ff2a2a';
+            btn.style.borderColor = '#ff2a2a';
+            btn.style.background = 'rgba(255,42,42,0.1)';
+            
+            // 改变材质颜色，模拟能量爆发
+            material.color.setHex(0xffffff);
+            
+            // 触发粒子加速扩散逻辑
+            isOverriding = true;
+            
+            // 震动特效
+            document.body.style.animation = 'pulse-border 0.2s infinite';
+            
+            setTimeout(() => {
+                btn.innerText = 'SYSTEM BREACHED';
+                document.body.style.animation = 'none';
+                
+                // 恢复黑洞爆发后的状态 (重置部分逻辑，如果需要循环的话，这里仅展示单次爆发)
+            }, 2500);
+        });
+    </script>
+</body>
+</html>
