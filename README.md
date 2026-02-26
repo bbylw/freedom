@@ -30,7 +30,7 @@ No build tools or dependency installation required, works out of the box.
 ## 📁 Project Structure
 
 ```
-StepFun/
+/
 ├── index.html    # Main page (includes all styles and scripts)
 └── README.md     # Project documentation
 ```
@@ -98,7 +98,7 @@ MIT License
 ## 📁 项目结构
 
 ```
-StepFun/
+/
 ├── index.html    # 主页面（包含所有样式和脚本）
 └── README.md     # 项目说明文档
 ```
@@ -131,3 +131,4 @@ StepFun/
 ## 📄 许可证
 
 MIT License
+
